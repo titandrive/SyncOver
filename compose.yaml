@@ -5,6 +5,16 @@ services:
     container_name: syncover
     restart: unless-stopped
     network_mode: host
+    environment:
+      SYNCOVER_DEVICE_NAME: ${SYNCOVER_DEVICE_NAME:-Titan}
+      SYNCOVER_SYNCTHING_URL: ${SYNCOVER_SYNCTHING_URL:-http://127.0.0.1:8384}
+      SYNCOVER_SYNCTHING_API_KEY: ${SYNCOVER_SYNCTHING_API_KEY:?Set your Syncthing API key}
+      SYNCOVER_PUSHOVER_TOKEN: ${SYNCOVER_PUSHOVER_TOKEN:?Set your Pushover application token}
+      SYNCOVER_PUSHOVER_USER: ${SYNCOVER_PUSHOVER_USER:?Set your Pushover user key}
+      SYNCOVER_POLL_SECONDS: ${SYNCOVER_POLL_SECONDS:-60}
+      SYNCOVER_ERROR_DELAY_SECONDS: ${SYNCOVER_ERROR_DELAY_SECONDS:-120}
+      SYNCOVER_NOTIFY_RECOVERY: ${SYNCOVER_NOTIFY_RECOVERY:-true}
+      SYNCOVER_STATE_FILE: ${SYNCOVER_STATE_FILE:-/config/state.json}
     read_only: true
     cap_drop:
       - ALL

@@ -64,11 +64,11 @@ cd /mnt/user/appdata
 git clone https://github.com/titandrive/SyncOver.git syncover-source
 cd syncover-source
 mkdir -p /mnt/user/appdata/syncover
-cp -n config.docker.example.json /mnt/user/appdata/syncover/config.json
-chmod 600 /mnt/user/appdata/syncover/config.json
+cp -n .env.example .env
+chmod 600 .env
 ```
 
-Edit `/mnt/user/appdata/syncover/config.json` and replace the three API key placeholders. The supplied Compose file uses host networking: `127.0.0.1:8384` works if Syncthing exposes its GUI/API on Titan's port 8384. If your Syncthing container uses a different published host port, change that port in `syncthing_url`. If Syncthing has its own LAN IP, use that IP instead. SyncOver does not need access to your synced files or Syncthing's appdata.
+Edit `.env` in the source folder and enter the three API keys. All settings are available there; Compose passes them into the container as environment variables. The supplied Compose file uses host networking: `127.0.0.1:8384` works if Syncthing exposes its GUI/API on Titan's port 8384. If your Syncthing container uses a different published host port, change that port in `syncthing_url`. If Syncthing has its own LAN IP, use that IP instead. SyncOver does not need access to your synced files or Syncthing's appdata.
 
 Test and launch from the source folder:
 
@@ -79,11 +79,36 @@ docker compose run --rm syncover --once
 docker compose up -d
 ```
 
-Settings: `/mnt/user/appdata/syncover/config.json`. Alert state: `/mnt/user/appdata/syncover/state.json`. The application lives inside the container. Logs: `docker compose logs -f`. Configuration changes: `docker compose restart`. Updates: `git pull` followed by `docker compose up -d --build`.
+Settings: `.env` in your source folder. Alert state: `/mnt/user/appdata/syncover/state.json`. The application lives inside the container. Logs: `docker compose logs -f`. Environment changes: `docker compose up -d --force-recreate`. Updates: `git pull` followed by `docker compose up -d --build`.
 
 The restart policy starts it again when Docker starts unless you explicitly stopped it. Ensure Unraid starts Docker automatically. Compose does not publish any SyncOver ports; the monitor has no web UI.
 
-Uninstall: `docker compose down --rmi local`. This removes the container and locally built image, leaving settings and state in appdata. Delete `/mnt/user/appdata/syncover/config.json` and `/mnt/user/appdata/syncover/state.json` to remove those too. The source checkout remains separate.
+Uninstall: `docker compose down --rmi local`. This removes the container and locally built image, leaving `.env` in your source folder and alert state in appdata. Delete `.env` and `/mnt/user/appdata/syncover/state.json` to remove those too. The source checkout remains separate.
+
+## Environment and CLI settings
+
+Every setting accepts a `SYNCOVER_` environment variable and a CLI flag:
+
+| Environment | CLI |
+| --- | --- |
+| `SYNCOVER_DEVICE_NAME` | `--device-name` |
+| `SYNCOVER_SYNCTHING_URL` | `--syncthing-url` |
+| `SYNCOVER_SYNCTHING_API_KEY` | `--syncthing-api-key` |
+| `SYNCOVER_PUSHOVER_TOKEN` | `--pushover-token` |
+| `SYNCOVER_PUSHOVER_USER` | `--pushover-user` |
+| `SYNCOVER_POLL_SECONDS` | `--poll-seconds` |
+| `SYNCOVER_ERROR_DELAY_SECONDS` | `--error-delay-seconds` |
+| `SYNCOVER_NOTIFY_RECOVERY` | `--notify-recovery` / `--no-notify-recovery` |
+| `SYNCOVER_STATE_FILE` | `--state-file` |
+
+Precedence: CLI flags → environment → optional JSON file → defaults. Environment booleans accept true/false, yes/no, or 1/0. Config files are optional when keys are supplied through environment or flags. CLI flags apply to that invocation; they do not save settings.
+
+```bash
+docker compose run --rm syncover --poll-seconds 90 --no-notify-recovery --once
+python3 syncover.py --device-name Donnager --error-delay-seconds 180
+```
+
+The systemd installer continues to use its saved JSON configuration. Docker uses `.env`; no config.json is required. Custom state paths inside Docker must be under `/config` to persist. Keep `.env` private; it is excluded from Git and the Docker build context.
 
 ## Behavior
 

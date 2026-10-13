@@ -97,11 +97,27 @@ class Monitor:
                     raise
 
 
-def load_config(path):
+def load_config(path, overrides=None):
     config = {'device_name': socket.gethostname(), 'syncthing_url': 'http://127.0.0.1:8384',
               'poll_seconds': 60, 'error_delay_seconds': 120, 'notify_recovery': True,
               'state_file': '~/.local/state/syncover/state.json'}
-    config.update(json.loads(Path(path).expanduser().read_text()))
+    config_path = Path(path).expanduser()
+    if config_path.exists():
+        config.update(json.loads(config_path.read_text()))
+    settings = ('device_name', 'syncthing_url', 'syncthing_api_key', 'pushover_token',
+                'pushover_user', 'poll_seconds', 'error_delay_seconds', 'notify_recovery', 'state_file')
+    for key in settings:
+        value = os.environ.get('SYNCOVER_' + key.upper())
+        if value is not None:
+            if key in ('poll_seconds', 'error_delay_seconds'):
+                value = float(value)
+            elif key == 'notify_recovery':
+                if value.lower() not in ('true', 'false', '1', '0', 'yes', 'no'):
+                    raise ValueError('SYNCOVER_NOTIFY_RECOVERY must be true or false')
+                value = value.lower() in ('true', '1', 'yes')
+            config[key] = value
+    config.update({key: value for key, value in (overrides or {}).items()
+                   if key in settings and value is not None})
     for key in ('syncthing_api_key', 'pushover_token', 'pushover_user'):
         if not isinstance(config.get(key), str) or not config[key].strip() or config[key].startswith('REPLACE_'):
             raise ValueError(f'Set {key} in configuration')
@@ -116,13 +132,19 @@ def load_config(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', default='~/.config/syncover/config.json')
+    for name in ('device-name', 'syncthing-url', 'syncthing-api-key', 'pushover-token',
+                 'pushover-user', 'state-file'):
+        parser.add_argument('--' + name)
+    parser.add_argument('--poll-seconds', type=float)
+    parser.add_argument('--error-delay-seconds', type=float)
+    parser.add_argument('--notify-recovery', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--test-notification', action='store_true')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     os.umask(0o077)
     try:
-        config = load_config(args.config)
+        config = load_config(args.config, vars(args))
         config['once'] = args.once
         monitor = Monitor(config)
     except (ValueError, OSError) as exc:

@@ -3,3 +3,7 @@ __pycache__/
 config.json
 state.json
 .venv/
+
+.env
+.env.*
+!.env.example
