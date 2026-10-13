@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Interactive installer for SyncOver. Run as your normal Linux user."""
+import argparse
 import getpass
 import json
 import os
@@ -35,7 +36,52 @@ def run(*args):
     subprocess.run(args, check=True)
 
 
+def uninstall(home, purge=False):
+    """Remove this user's installation; leave source checkout and shared settings."""
+    unit = home / '.config/systemd/user/syncover.service'
+    loaded = subprocess.run(
+        ['systemctl', '--user', 'show', 'syncover.service', '-p', 'LoadState', '--value'],
+        capture_output=True, text=True)
+    # Never remove files while an installed service could still be running.
+    if loaded.stdout.strip() != 'not-found':
+        run('systemctl', '--user', 'stop', 'syncover.service')
+        run('systemctl', '--user', 'disable', 'syncover.service')
+    unit.unlink(missing_ok=True)
+    app_dir = home / '.local/lib/syncover'
+    (app_dir / 'syncover.py').unlink(missing_ok=True)
+    try:
+        app_dir.rmdir()
+    except FileNotFoundError:
+        pass
+    except OSError:
+        print('Additional files in the application folder were preserved.')
+    if purge:
+        for directory, names in (
+                (home / '.config/syncover', ('config.json', 'config.tmp')),
+                (home / '.local/state/syncover', ('state.json', 'state.tmp'))):
+            for name in names:
+                (directory / name).unlink(missing_ok=True)
+            try:
+                directory.rmdir()
+            except FileNotFoundError:
+                pass
+            except OSError:
+                print(f'Additional files preserved in {directory}.')
+    run('systemctl', '--user', 'daemon-reload')
+    print('SyncOver uninstalled. Source checkout and user lingering settings were preserved.')
+    if purge:
+        print('Default configuration and alert history removed. Custom state paths are preserved.')
+    else:
+        print('Configuration and alert history preserved for reinstalling.')
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--uninstall', action='store_true', help='Stop and remove SyncOver')
+    parser.add_argument('--purge', action='store_true', help='Also remove saved keys and default alert history')
+    args = parser.parse_args()
+    if args.purge and not args.uninstall:
+        parser.error('--purge requires --uninstall')
     if sys.platform != 'linux' or os.geteuid() == 0:
         sys.exit('Run this installer on Linux as your normal user, without sudo.')
     if sys.version_info < (3, 9) or not shutil.which('systemctl'):
@@ -46,6 +92,9 @@ def main():
     if result.returncode:
         sys.exit('Cannot reach your user service manager. Log in directly as your normal user and retry.')
     home = Path.home()
+    if args.uninstall:
+        uninstall(home, args.purge)
+        return
     source = Path(__file__).resolve().parent
     config_path = home / '.config/syncover/config.json'
     config = json.loads((source / 'config.example.json').read_text())
@@ -99,4 +148,4 @@ if __name__ == '__main__':
     except (KeyboardInterrupt, EOFError):
         sys.exit('\nSetup cancelled.')
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
-        sys.exit(f'Setup did not finish ({type(exc).__name__}). Fix the reported issue and run the installer again.')
+        sys.exit(f'Operation did not finish ({type(exc).__name__}). Fix the reported issue and run the installer again.')

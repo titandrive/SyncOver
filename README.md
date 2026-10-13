@@ -37,6 +37,22 @@ journalctl --user -u syncover -f
 systemctl --user disable --now syncover
 ```
 
+### Uninstall
+
+From the repository directory:
+
+```bash
+python3 install.py --uninstall
+```
+
+This stops and removes the service and installed application. It keeps your settings and alert history for a future reinstall. To also delete saved keys and default alert history:
+
+```bash
+python3 install.py --uninstall --purge
+```
+
+The downloaded repository, custom state paths, and user lingering setting are preserved.
+
 ## Behavior
 
 Folders are tracked independently. Changed errors start a fresh grace period, so rapidly changing errors can postpone an alert. Paused folders are skipped. Failed API requests preserve incident state. Recovery requires an idle folder with no reported errors; it means errors cleared, not that every remote device is up to date. Removed folders retain their last incident state without a recovery message.
