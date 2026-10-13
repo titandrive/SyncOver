@@ -6,35 +6,36 @@ Checks folders every 60 seconds. Alerts after an unchanged error set persists fo
 
 ## Install
 
-Run these commands from the repository as the user who will run the monitor:
+On each machine, run as your normal user (without sudo):
 
 ```bash
-mkdir -p ~/.local/lib/syncover ~/.config/syncover ~/.config/systemd/user
-install -m 644 syncover.py ~/.local/lib/syncover/syncover.py
-install -m 644 systemd/syncover.service ~/.config/systemd/user/syncover.service
-cp -n config.example.json ~/.config/syncover/config.json
-chmod 600 ~/.config/syncover/config.json
+git clone https://github.com/titandrive/SyncOver.git
+cd SyncOver
+python3 install.py
 ```
 
-Edit `~/.config/syncover/config.json`. Set device_name to Titan or Donnager, the local Syncthing API key (Settings → GUI), and your Pushover application token and user key. Both installations can use the same Pushover credentials. Keep credentials outside the repository.
+Already cloned it? Just run `python3 install.py` inside the SyncOver folder.
+
+The installer asks for the device name, Syncthing address, and Pushover keys. It tries to find your local Syncthing API key automatically. Otherwise, copy it from Syncthing → Settings → GUI. Find your Pushover user key on your account dashboard and create an application for its application token. Both machines can share those Pushover credentials.
+
+Setup sends a test notification, checks Syncthing, and starts the service automatically. Keys are entered privately and saved in `~/.config/syncover/config.json`, outside this repository. You can accept the default address for a standard local Syncthing installation. On servers, answer yes to running after logout; this step may ask for your sudo password.
+
+### Update or change settings
 
 ```bash
-python3 ~/.local/lib/syncover/syncover.py --test-notification
-python3 ~/.local/lib/syncover/syncover.py --once
-systemctl --user daemon-reload
-systemctl --user enable --now syncover.service
-journalctl --user -u syncover.service -f
+git pull
+python3 install.py
 ```
 
-For a headless server, enable operation without an active login:
+Press Enter to keep existing values. Additional settings (alert delay, polling interval, recovery notifications) are in `~/.config/syncover/config.json`; restart after editing.
+
+### Status and stop
 
 ```bash
-sudo loginctl enable-linger "$USER"
+systemctl --user status syncover
+journalctl --user -u syncover -f
+systemctl --user disable --now syncover
 ```
-
-After configuration changes: `systemctl --user restart syncover.service`.
-To stop: `systemctl --user disable --now syncover.service`.
-To update: repeat the two install commands, daemon-reload, and restart.
 
 ## Behavior
 
