@@ -36,7 +36,7 @@ def run(*args):
     subprocess.run(args, check=True)
 
 
-def uninstall(home, purge=False):
+def uninstall(home, purge=True):
     """Remove this user's installation; leave source checkout and shared settings."""
     unit = home / '.config/systemd/user/syncover.service'
     loaded = subprocess.run(
@@ -78,10 +78,13 @@ def uninstall(home, purge=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--uninstall', action='store_true', help='Stop and remove SyncOver')
-    parser.add_argument('--purge', action='store_true', help='Also remove saved keys and default alert history')
+    parser.add_argument('--keep-config', action='store_true', help='Preserve settings and alert history when uninstalling')
+    parser.add_argument('--purge', action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
-    if args.purge and not args.uninstall:
-        parser.error('--purge requires --uninstall')
+    if (args.purge or args.keep_config) and not args.uninstall:
+        parser.error('--keep-config and --purge require --uninstall')
+    if args.purge and args.keep_config:
+        parser.error('--purge cannot be combined with --keep-config')
     if sys.platform != 'linux' or os.geteuid() == 0:
         sys.exit('Run this installer on Linux as your normal user, without sudo.')
     if sys.version_info < (3, 9) or not shutil.which('systemctl'):
@@ -93,7 +96,7 @@ def main():
         sys.exit('Cannot reach your user service manager. Log in directly as your normal user and retry.')
     home = Path.home()
     if args.uninstall:
-        uninstall(home, args.purge)
+        uninstall(home, purge=not args.keep_config)
         return
     source = Path(__file__).resolve().parent
     config_path = home / '.config/syncover/config.json'

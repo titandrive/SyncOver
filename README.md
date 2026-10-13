@@ -45,10 +45,10 @@ From the repository directory:
 python3 install.py --uninstall
 ```
 
-This stops and removes the service and installed application. It keeps your settings and alert history for a future reinstall. To also delete saved keys and default alert history:
+This stops and removes the service, installed application, saved API keys, settings, and default alert history. To keep settings and alert history for a future reinstall:
 
 ```bash
-python3 install.py --uninstall --purge
+python3 install.py --uninstall --keep-config
 ```
 
 The downloaded repository, custom state paths, and user lingering setting are preserved.
