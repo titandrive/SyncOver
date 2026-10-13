@@ -16,7 +16,7 @@ python3 install.py
 
 Already cloned it? Just run `python3 install.py` inside the SyncOver folder.
 
-The installer asks for the device name, Syncthing address, and Pushover keys. It tries to find your local Syncthing API key automatically. Otherwise, copy it from Syncthing → Settings → GUI. Find your Pushover user key on your account dashboard and create an application for its application token. Both machines can share those Pushover credentials.
+The installer asks for the device name, Syncthing address, and Pushover keys. It tries to find your local Syncthing API key automatically. Otherwise, copy it from Syncthing → Settings → General. Find your Pushover user key on your account dashboard and create an application for its application token. Both machines can share those Pushover credentials.
 
 Setup sends a test notification, checks Syncthing, and starts the service automatically. Keys are entered privately and saved in `~/.config/syncover/config.json`, outside this repository. You can accept the default address for a standard local Syncthing installation. On servers, answer yes to running after logout; this step may ask for your sudo password.
 
@@ -53,7 +53,7 @@ python3 install.py --uninstall --keep-config
 
 The downloaded repository, custom state paths, and user lingering setting are preserved.
 
-## Titan / Unraid (Docker Compose)
+## Docker Compose
 
 Enable Docker and have Docker Compose available on Unraid (for example through a Compose management plugin). Compose pulls the prebuilt release image from GitHub Container Registry. No local build is required.
 
@@ -68,7 +68,7 @@ cp -n .env.example .env
 chmod 600 .env
 ```
 
-Edit `.env` in the source folder and enter the three API keys. All settings are available there; Compose passes them into the container as environment variables. The supplied Compose file uses host networking: `127.0.0.1:8384` works if Syncthing exposes its GUI/API on Titan's port 8384. If your Syncthing container uses a different published host port, change that port in `syncthing_url`. If Syncthing has its own LAN IP, use that IP instead. SyncOver does not need access to your synced files or Syncthing's appdata.
+Edit `.env` in the source folder and enter the three API keys. All settings are available there; Compose passes them into the container as environment variables. The supplied Compose file uses host networking: `127.0.0.1:8384` works if Syncthing exposes its GUI/API on Titan's port 8384. If your Syncthing container uses a different published host port, change that port in `SYNCOVER_SYNCTHING_URL`. If Syncthing has its own LAN IP, use that IP instead. SyncOver does not need access to your synced files or Syncthing's appdata.
 
 Test and launch from the source folder:
 
@@ -84,6 +84,31 @@ Settings: `.env` in your source folder. Alert state: `/mnt/user/appdata/syncover
 The restart policy starts it again when Docker starts unless you explicitly stopped it. Ensure Unraid starts Docker automatically. Compose does not publish any SyncOver ports; the monitor has no web UI.
 
 Uninstall: `docker compose down`. This removes the container, leaving `.env` in your source folder and alert state in appdata. Delete `.env` and `/mnt/user/appdata/syncover/state.json` to remove those too. The source checkout remains separate.
+
+### Titan: existing ionproxy network
+
+Use `compose.titan.yaml` for Titan. It joins the existing external `ionproxy` network and connects to `http://syncthing:8384`. This matches Titan's Syncthing container, which is named `syncthing` and already joins `ionproxy`. No Caddy labels or web UI are needed.
+
+For a Compose management UI, paste the contents of `compose.titan.yaml` and supply the three API key environment variables through your manager, or replace the `${...}` placeholders with your keys. The keys are supplied to the container through its environment. Alert history lives in `/mnt/user/appdata/syncover/state.json`.
+
+For terminal use, put the keys in `.env` next to the Compose file:
+
+```bash
+docker compose -f compose.titan.yaml pull
+docker compose -f compose.titan.yaml up -d
+```
+
+This variant uses `ghcr.io/titandrive/syncover:latest`; the generic `compose.yaml` pins a release version. `latest` advances with releases, but running containers only update when you pull and recreate/redeploy them.
+
+Verify the running installation:
+
+```bash
+docker exec syncover python /app/syncover.py --test-notification
+docker exec syncover python /app/syncover.py --once
+docker logs --tail 30 syncover
+```
+
+The test should arrive in Pushover, and the one-shot check should say `Syncthing check completed successfully`. Afterward the background monitor stays quiet until an unchanged error set persists for two minutes. Each folder gets one alert for an unchanged incident, an updated alert after changed errors persist, and a recovery notice when errors clear. Paused folders, offline devices, and slow syncing do not trigger notifications.
 
 ## Environment and CLI settings
 
