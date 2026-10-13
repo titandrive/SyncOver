@@ -1,0 +1,11 @@
+{
+  "device_name": "Titan",
+  "syncthing_url": "http://127.0.0.1:8384",
+  "syncthing_api_key": "REPLACE_SYNCTHING_API_KEY",
+  "pushover_token": "REPLACE_PUSHOVER_APP_TOKEN",
+  "pushover_user": "REPLACE_PUSHOVER_USER_KEY",
+  "poll_seconds": 60,
+  "error_delay_seconds": 120,
+  "notify_recovery": true,
+  "state_file": "/config/state.json"
+}

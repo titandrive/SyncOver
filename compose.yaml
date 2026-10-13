@@ -1,0 +1,19 @@
+services:
+  syncover:
+    build: .
+    image: syncover:local
+    container_name: syncover
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /mnt/user/appdata/syncover:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
