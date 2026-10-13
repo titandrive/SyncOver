@@ -69,3 +69,25 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(len(self.messages), 1)
         self.monitor.observe('docs', 'Documents', ['b'], 300)
         self.assertEqual(len(self.messages), 2)
+
+    def test_null_errors_are_healthy_and_resolve_incident(self):
+        self.monitor.observe('docs', 'Documents', ['failed'], 0)
+        self.monitor.observe('docs', 'Documents', ['failed'], 120)
+        self.monitor.api = lambda endpoint, **kwargs: {
+            'config/folders': [{'id': 'docs'}],
+            'folder/errors': {'errors': None},
+            'db/status': {'state': 'idle', 'pullErrors': 0}}[endpoint]
+        self.monitor.poll()
+        self.assertNotIn('docs', self.monitor.state)
+        self.assertEqual(len(self.messages), 2)
+
+    def test_null_errors_during_retry_do_not_resolve(self):
+        self.monitor.observe('docs', 'Documents', ['failed'], 0)
+        self.monitor.observe('docs', 'Documents', ['failed'], 120)
+        self.monitor.api = lambda endpoint, **kwargs: {
+            'config/folders': [{'id': 'docs'}],
+            'folder/errors': {'errors': None},
+            'db/status': {'state': 'syncing', 'pullErrors': 0}}[endpoint]
+        self.monitor.poll()
+        self.assertIn('docs', self.monitor.state)
+        self.assertEqual(len(self.messages), 1)

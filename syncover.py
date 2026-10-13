@@ -78,6 +78,9 @@ class Monitor:
                 errors, page = [], 1
                 while True:
                     entries = self.api('folder/errors', folder=fid, page=page, perpage=100)['errors']
+                    # Syncthing serializes an empty error slice as JSON null.
+                    if entries is None:
+                        entries = []
                     errors.extend(f"{e.get('path', '(folder)')}: {e['error']}" for e in entries)
                     if len(entries) < 100:
                         break
@@ -159,6 +162,8 @@ def main():
     while not stop.is_set():
         try:
             monitor.poll()
+            if args.once:
+                logging.info('Syncthing check completed successfully')
         except Exception as exc:
             logging.warning('Check failed (%s); no offline notification sent', type(exc).__name__)
             if args.once:
