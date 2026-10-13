@@ -1,7 +1,6 @@
 services:
   syncover:
-    build: .
-    image: syncover:local
+    image: ghcr.io/titandrive/syncover:0.1.0
     container_name: syncover
     restart: unless-stopped
     network_mode: host

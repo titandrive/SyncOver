@@ -55,7 +55,7 @@ The downloaded repository, custom state paths, and user lingering setting are pr
 
 ## Titan / Unraid (Docker Compose)
 
-Enable Docker and have Docker Compose available on Unraid (for example through a Compose management plugin). This builds the image locally; no published image is required.
+Enable Docker and have Docker Compose available on Unraid (for example through a Compose management plugin). Compose pulls the prebuilt release image from GitHub Container Registry. No local build is required.
 
 Keep the source on persistent storage:
 
@@ -73,17 +73,17 @@ Edit `.env` in the source folder and enter the three API keys. All settings are 
 Test and launch from the source folder:
 
 ```bash
-docker compose build
+docker compose pull
 docker compose run --rm syncover --test-notification
 docker compose run --rm syncover --once
 docker compose up -d
 ```
 
-Settings: `.env` in your source folder. Alert state: `/mnt/user/appdata/syncover/state.json`. The application lives inside the container. Logs: `docker compose logs -f`. Environment changes: `docker compose up -d --force-recreate`. Updates: `git pull` followed by `docker compose up -d --build`.
+Settings: `.env` in your source folder. Alert state: `/mnt/user/appdata/syncover/state.json`. The application lives inside the container. Logs: `docker compose logs -f`. Environment changes: `docker compose up -d --force-recreate`. Updates: `git pull`, `docker compose pull`, then `docker compose up -d`.
 
 The restart policy starts it again when Docker starts unless you explicitly stopped it. Ensure Unraid starts Docker automatically. Compose does not publish any SyncOver ports; the monitor has no web UI.
 
-Uninstall: `docker compose down --rmi local`. This removes the container and locally built image, leaving `.env` in your source folder and alert state in appdata. Delete `.env` and `/mnt/user/appdata/syncover/state.json` to remove those too. The source checkout remains separate.
+Uninstall: `docker compose down`. This removes the container, leaving `.env` in your source folder and alert state in appdata. Delete `.env` and `/mnt/user/appdata/syncover/state.json` to remove those too. The source checkout remains separate.
 
 ## Environment and CLI settings
 
