@@ -4,6 +4,12 @@ Lightweight Linux monitor for local Syncthing sync errors, delivered through Pus
 
 Checks folders every 60 seconds. Alerts after an unchanged error set persists for 120 seconds. Includes the device, folder and error details. Suppresses duplicate alerts across restarts and optionally sends recovery messages. API outages and offline devices are logged without notifications.
 
+## Android (experimental Morphe patch)
+
+A standalone [Morphe patch](android/README.md) adds native error/recovery notifications to **Syncthing-Fork 2.1.6.0**. It uses the existing app event stream, without a separate monitor service or Pushover keys. The Android patch is distributed separately from Docker releases, with tags beginning `android-`.
+
+See the [Android instructions](android/README.md) for compatibility, build steps, and installation/signature considerations. It has passed state-machine tests and an APK patch/rebuild check; on-device notification delivery is not yet verified.
+
 ## Linux desktop installation (systemd)
 
 On each machine, run as your normal user (without sudo):
